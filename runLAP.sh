@@ -1,6 +1,3 @@
-#!/bin/bash
-
-#####################################################################
 # Script  name      : runLAP.sh
 #
 # Author            : Maciej Dobrzynski
@@ -42,7 +39,7 @@
 # Example usage:
 #  assume we have a directory ~/myexp1/cp.out/output/out_0001
 #  with CellProfiler output from batch analysis. Run:
-#  ./runLAP.sh -n 10 path_to_directory
+#  ./runLAP.sh -n 10 -i path_to_directory
 #
 # where "-n 10" is the threshold for minimum length of single-cell tracks that will be output in the final CSV
 # 
@@ -56,9 +53,9 @@
 #####################################################################
 
 
-# DEFINITIONS
+# DEFINITIONS and default arguments
 # Directory to work on
-INDIR=/mnt/imaging.data/Paolo/MCF10A_TimeLapse/2018-03-26_MCF10Amutants_H2B-miRFP_ERKKTR-Turq_FoxO-NeonGreen_40xAir_T5min_Stim15min-1ngmlEGF_24h-starving+CO2/cp.out2/output/out_0003
+INDIRFLAG=false
 
 # Threshold for track length; only track longer than that will be saved
 NTRACKLENGTH=10
@@ -98,6 +95,35 @@ DIRIMSEG="segmented"
 DIRIMOVER="segmented_over"
 
 
+# READ ARGUMENTS
+TEMP=`getopt -o i:n: --long indir:,ntracklength: -n 'runLAP.sh' -- "$@"`
+eval set -- "$TEMP"
+
+while true ; do
+    case "$1" in
+        -i|--indir)
+	    INDIRFLAG=true ;
+            case "$2" in
+                "") shift 2 ;;
+                *) INDIR=$2 ; shift 2 ;;
+            esac ;;
+        -n|--ntracklength)
+            case "$2" in
+                "") shift 2 ;;
+                *) NTRACKLENGTH=$2 ; shift 2 ;;
+            esac ;;
+        --) shift ; break ;;
+        *) echo "Internal error!" ; exit 1 ;;
+    esac
+done
+
+if ! $INDIRFLAG
+then
+    echo "Working directory must be specified with -i"
+    exit
+fi
+
+
 # ANALYSIS
 # Entire filename with raw CP output
 FCPRAWALL=$FCPRAW$FCPEXT
@@ -108,25 +134,29 @@ FCP1LHALL=$FCPRAW$FCPOUT1LH$FCPEXT
 # Entire directory (relative to $INDIR) name to place LAP output
 DIRLAPOUTALL=$DIRLAPOUT$FCPRAW$FCPOUT1LH
 
+# Cobvert relative path to absolute
+INDIRFULL=`readlink -f $INDIR`
+
 # Run R script to convert CP output from 2- to 1-line header, and remove unnecessary or duplicated columns
 # Takes the input file and writes the result in $FCP1LHALL
 echo "1. Convert and clean CP output"
-runrscript.sh $DIRRSCR/cleanCPout.R $INDIR/$FCPRAWALL $INDIR/$FCP1LHALL
+runrscript.sh $DIRRSCR/cleanCPout.R $INDIRFULL/$FCPRAWALL $INDIR/$FCP1LHALL
 
 # Run MATLAB script with LAP tracking
 # Changes to $INDIR directory, places output in $DIRLAPOUTALL sub-directory
 # Matlab script works with the prefix for the output directory
 
 echo "2. Run LAP tracking"
-CMDMAT='cd '"'"$DIRMSCR"'"'; trackFromCPsepfiles('"'"$INDIR"'"', '"'"$FCP1LHALL"'"', '"'"$DIRLAPOUT"'"', '"'"$DIRUSCR"'"'); quit'
+CMDMAT='cd '"'"$DIRMSCR"'"'; trackFromCPsepfiles('"'"$INDIRFULL"'"', '"'"$FCP1LHALL"'"', '"'"$DIRLAPOUT"'"', '"'"$DIRUSCR"'"'); quit'
+echo $CMDMAT
 matlab -nodisplay -nosplash -nodesktop -r "$CMDMAT"
 
 # Overlay track IDs onto segmented images
 # The resulting images are placed in a directory ...
 echo "3. Overlay track IDs"
 
-mkdir -p $INDIR/$DIRIMOVER
-python3 $DIRPSCR/script_overlay.py $INDIR $DIRLAPOUTALL $DIRIMSEG $DIRIMOVER
+mkdir -p $INDIRFULL/$DIRIMOVER
+python3 $DIRPSCR/script_overlay.py $INDIRFULL $DIRLAPOUTALL $DIRIMSEG $DIRIMOVER
 
 # Create final CSV with origianal CP output + track ID
 # Arguments for this script are:
@@ -135,4 +165,5 @@ python3 $DIRPSCR/script_overlay.py $INDIR $DIRLAPOUTALL $DIRIMSEG $DIRIMOVER
 # - sub-directory with LAP output
 # - integer threshold for track lengths; only track longer than that will be saved
 echo "4. Generate final CSV with tracks longer than $NTRACKLENGTH"
-runrscript.sh $DIRRSCR/analConn.R $INDIR $FCPRAW$FCPOUT1LH $DIRLAPOUT$FCPRAW$FCPOUT1LH $NTRACKLENGTH
+runrscript.sh $DIRRSCR/analConn.R $INDIRFULL $FCPRAW$FCPOUT1LH $DIRLAPOUT$FCPRAW$FCPOUT1LH $NTRACKLENGTH
+
