@@ -96,6 +96,7 @@ FARRAY=$INDIR/$SLOUTDIR/$JOBNAME.sbatch
 echo "#!/bin/bash" > $FARRAY
 echo "#SBATCH --array=1-$NFOLD" >> $FARRAY 
 echo "#SBATCH -J $JOBNAME # Single job name for the array" >> $FARRAY
+echo "#SBATCH --mem-per-cpu=4096" >> $FARRAY
 #echo "#SBATCH -c $NCORE # Number of cores" >> $FARRAY
 echo "#SBATCH -t $TIME # walltime" >> $FARRAY
 echo "#SBATCH -o $INDIR/$SLOUTDIR/out/${JOBNAME}_array%A%a.out" >> $FARRAY
