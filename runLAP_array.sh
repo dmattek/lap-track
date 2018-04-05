@@ -21,6 +21,7 @@ where:
 # -------------- Bash part for taking inputs -----------
 
 INDIRFLAG=false
+SLOUTDIR=slurm.jobs
 
 # Default parameters for slurm array and LAP
 NTRACKLENGTH=10
@@ -81,27 +82,27 @@ fi
 INDIR=`readlink -f $INDIR`
 
 # Number of subfolder in the working directory (=number tasks)
-NFOLD=`ls -1 $INDIR | grep -v '^SLURM\|@eaDir' | wc -l`
+NFOLD=`ls -1 $INDIR | grep -v '^slurm\|@eaDir' | wc -l`
 echo "Number of tasks: $NFOLD"
 
 # Directory for files array-related
-mkdir -p $INDIR/SLURM
-mkdir -p $INDIR/SLURM/out
-mkdir -p $INDIR/SLURM/err
+mkdir -p $INDIR/$SLOUTDIR
+mkdir -p $INDIR/$SLOUTDIR/out
+mkdir -p $INDIR/$SLOUTDIR/err
 
 # Create a file with job array for submission
-FARRAY=$INDIR/SLURM/$JOBNAME.sbatch
+FARRAY=$INDIR/$SLOUTDIR/$JOBNAME.sbatch
 
 echo "#!/bin/bash" > $FARRAY
 echo "#SBATCH --array=1-$NFOLD" >> $FARRAY 
 echo "#SBATCH -J $JOBNAME # Single job name for the array" >> $FARRAY
 #echo "#SBATCH -c $NCORE # Number of cores" >> $FARRAY
 echo "#SBATCH -t $TIME # walltime" >> $FARRAY
-echo "#SBATCH -o $INDIR/SLURM/out/${JOBNAME}_array%A%a.out" >> $FARRAY
-echo "#SBATCH -e $INDIR/SLURM/err/${JOBNAME}_array%A%a.err" >> $FARRAY
+echo "#SBATCH -o $INDIR/$SLOUTDIR/out/${JOBNAME}_array%A%a.out" >> $FARRAY
+echo "#SBATCH -e $INDIR/$SLOUTDIR/err/${JOBNAME}_array%A%a.err" >> $FARRAY
 
 # Select only the n-th subfolder, where n is the task ID
-echo "SUBFOLD=\`ls '$INDIR' | grep -v '^SLURM\|@eaDir' | head -\$SLURM_ARRAY_TASK_ID | tail -1\`" >> $FARRAY
+echo "SUBFOLD=\`ls '$INDIR' | grep -v '^slurm\|@eaDir' | head -\$SLURM_ARRAY_TASK_ID | tail -1\`" >> $FARRAY
 echo "runLAP.sh -i $INDIR/\$SUBFOLD -n $NTRACKLENGTH" >> $FARRAY
 
 # Submit jobs

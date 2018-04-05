@@ -43,7 +43,9 @@ if ~exist(fname.pathlap, 'dir')
 end
 
 % Read CP output
-dat = readtable(sprintf('%s/%s', fname.pathcp, fname.cpcsv));
+% Use TreatAsEmpty option to handle NAs in CP output
+% Without this option, a numeric column with NAs is read as string
+dat = readtable(sprintf('%s/%s', fname.pathcp, fname.cpcsv), 'TreatAsEmpty',{'NA'});
 
 % Relevant column names in CP output
 s.posx = 'objNuclei_Location_Center_X';
