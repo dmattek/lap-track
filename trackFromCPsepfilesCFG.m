@@ -6,35 +6,80 @@
 % 'trackXY_', '/opt/local/u-track/software')
 % 
 % Input params:
+% inFileConfig - A csv file with parameter names; should contain two
+% columns with a header (parameter, value)
+%
 % inPathCP - Absolute path to directory with CP merged output
-% inFileCPcsv - Name of the CP output file (must be converted to a 1-line header, prior to analysis!)
-% inDirTrack - Directory name with LAP output (relative to inPathCP)
-% inPathUtrack - Absolute path to u-track software
+%
+% Parameters used from the config file:
+% file_cpout_1line
+% dir_lapout
+% file_cpout_1line
+% dir_lapout
+% column_well
+% column_fov
+% column_frame
+% column_posx
+% column_posy
+% 
 
-function trackRes = trackFromCPsepfiles(inFileConfig)
+
+function trackRes = trackFromCPsepfilesCFG(inFileConfig, inPathCP)
 
 trackRes=0;
 
-%% Prepare data
+%% Parse config file
+%inFileConfig = 'lapconfig.csv';
+%inPathCP = '/Users/maciekd/Projects/Olivier/modelDatasets/timelapse/2018-03-28_MCF10Amutants_sparse_5x103_H2B-miRFP_ERK-Turq_FoxO-NeonGreen_10xAir_T5min_NoStim-0ngmlEGF_6h-starving_CO2/cp.out/output/out_0001';
 
-% Absolute path to directory with CP merged output
+% Set params
+% column name in config file with parameter names
+cfgpar.colpar = 'parameter';
+
+% column name in config file with parameter values
+cfgpar.colval = 'value';
+
+% names of parameters from the config file required in this script
+
+% single-line header file with CP output;
+% usually crerated by cleanCPoutCFG.R script
+% e.g. objNuclei_1line.csv
+cfgpar.cpout1line = 'file_cpout_1line';
+
+
+cfgpar.dirtracks = 'dir_lapout';
+cfgpar.col_well = 'column_well';
+cfgpar.col_fov = 'column_fov';
+cfgpar.col_frame = 'column_frame';
+cfgpar.col_posx = 'column_posx';
+cfgpar.col_posy = 'column_posy';
+
+% Read config file
+cfgtab = readtable(inFileConfig);
+
+% Assign parameters from the config file
+par.cpout1line = assignPar(cfgpar.cpout1line, cfgtab, cfgpar.colpar, cfgpar.colval);
+par.dirtracks  = assignPar(cfgpar.dirtracks,  cfgtab, cfgpar.colpar, cfgpar.colval);
+par.col_well   = assignPar(cfgpar.col_well,   cfgtab, cfgpar.colpar, cfgpar.colval);
+par.col_fov    = assignPar(cfgpar.col_fov,    cfgtab, cfgpar.colpar, cfgpar.colval);
+par.col_frame  = assignPar(cfgpar.col_frame,  cfgtab, cfgpar.colpar, cfgpar.colval);
+par.col_posx   = assignPar(cfgpar.col_posx,   cfgtab, cfgpar.colpar, cfgpar.colval);
+par.col_posy   = assignPar(cfgpar.col_posy,   cfgtab, cfgpar.colpar, cfgpar.colval);
+
+
+
+%% Prepare data for tracking
+
+% Absolute path to directory with CP output, e.g.
+% /home/user/myexp1/output/out_0001
+% Usually this directory holds output with a single FOV
 fname.pathcp = inPathCP;
 
-% Name of the CP output file
-% In CP, when measuring multiple objects and merging output together,
-% the output csv file has a 2-row header.
-% In order to use this script, the header has to be converted to a single
-% line.
-fname.cpcsv = inFileCPcsv;
-
 % CP output core name
-fname.cpcsvcore = extractBefore(fname.cpcsv, '.');
-
-% Directory name with LAP output (relative to fname.dir.cp)
-fname.dirlap = strcat(inDirTrack, fname.cpcsvcore); 
+fname.cpcsvcore = extractBefore(par.cpout1line, '.');
 
 % Absolute path to directory with LAP output
-fname.pathlap = sprintf('%s/%s',fname.pathcp, fname.dirlap);
+fname.pathlap = sprintf('%s/%s', fname.pathcp, par.dirtracks);
 
 % create if doesn't exist
 if ~exist(fname.pathlap, 'dir')
@@ -44,47 +89,34 @@ end
 % Read CP output
 % Use TreatAsEmpty option to handle NAs in CP output
 % Without this option, a numeric column with NAs is read as string
-dat = readtable(sprintf('%s/%s', fname.pathcp, fname.cpcsv), 'TreatAsEmpty',{'NA'});
+dat = readtable(sprintf('%s/%s', fname.pathcp, par.cpout1line), 'TreatAsEmpty',{'NA'});
 
-% Relevant column names in CP output
-s.posx = inColPosx;
-s.posy = inColPosy;
-%s.cytoInt = 'objCytoRing_Intensity_MeanIntensity_imKTR';
-%s.nucInt = 'objNuclei_Intensity_MeanIntensity_imKTR';
-s.meas = 'meas'; % name of the new column with cyto/nuc ratio
-s.time = inColTime;
-s.well = inColWell;
-s.site = inColSite;
-
-
-% Calculate cyto/nuc ratio of ERK-KTR
-%dat.meas = dat.(s.cytoInt) ./ dat.(s.nucInt);
 
 % Check whether column names exist in data
 s.vars = dat.Properties.VariableNames;
 
-if (sum(contains(s.vars, s.posx)) == 0)
+if (sum(contains(s.vars, par.col_posx)) == 0)
   disp('No column with X position')
   return 
 end
 
-if (sum(contains(s.vars, s.posy)) == 0)
+if (sum(contains(s.vars, par.col_posy)) == 0)
   disp('No column with Y position')
   return 
 end
 
-if (sum(contains(s.vars, s.time)) == 0)
+if (sum(contains(s.vars, par.col_frame)) == 0)
   disp('No column with metadata time')
   return 
 end
 
 bWellExists = 1;
-if (sum(contains(s.vars, s.well)) == 0)
+if (sum(contains(s.vars, par.col_well)) == 0)
   disp('No column with metadata well; assuming one well')
   bWellExists = 0;
 end
 
-if (sum(contains(s.vars, s.site)) == 0)
+if (sum(contains(s.vars, par.col_fov)) == 0)
   disp('No column with metadata site')
   return 
 end
@@ -94,8 +126,8 @@ end
 
 % define iterators
 % get range of wells
-sTmp = unique(dat.(s.well));
-if (sum(isnan(sTmp)) > 0)
+sTmp = unique(dat.(par.col_well));
+if (sum(isnan(sTmp{1})) > 0)
   disp('Column with metadata well contains NaN; assuming one well')
   szAllWells = 1;
   all.wells = '0';
@@ -107,7 +139,7 @@ else
 end
 
 % get range of FOV
-all.fovs = unique(dat.(s.site));
+all.fovs = unique(dat.(par.col_fov));
 
 %%
 for iiWells = 1:szAllWells
@@ -145,13 +177,13 @@ for iiWells = 1:szAllWells
         % get object coordinates from a single field of view;
         % all time points for that FOV
         if (bWellExists)
-          datI = dat(categorical(dat.(s.well)) == curr.well & dat.(s.site) == curr.fov, :);
+          datI = dat(categorical(dat.(par.col_well)) == curr.well & dat.(par.col_fov) == curr.fov, :);
         else
-          datI = dat(dat.(s.site) == curr.fov, :);
+          datI = dat(dat.(par.col_fov) == curr.fov, :);
         end
 
         % get range of frame numbers (here from time column of CP output)
-        fov.tpts = unique(datI.(s.time));
+        fov.tpts = unique(datI.(par.col_frame));
 
         fprintf('%d frames\n\n', length(fov.tpts))
 
@@ -167,7 +199,7 @@ for iiWells = 1:szAllWells
         for iiTpts = 1:length(fov.tpts)
 
             % vector with data
-            col1 = datI.(s.posx)(datI.(s.time) == fov.tpts(iiTpts));
+            col1 = datI.(par.col_posx)(datI.(par.col_frame) == fov.tpts(iiTpts));
  
             % vector with std of data 
             % it's all 0, hence same for all variables
@@ -175,11 +207,11 @@ for iiWells = 1:szAllWells
 
             v1(:, iiTpts) = {[col1 col2]};
     
-            col1 = datI.(s.posy)(datI.(s.time) == fov.tpts(iiTpts));
+            col1 = datI.(par.col_posy)(datI.(par.col_frame) == fov.tpts(iiTpts));
             v2(:, iiTpts) = {[col1 col2]};
     
             % Measurement filled as zeroes
-            %col1 = datI.(s.meas)(datI.(s.time) == fov.tpts(iiTpts));
+            %col1 = datI.(s.meas)(datI.(par.col_frame) == fov.tpts(iiTpts));
             v3(:, iiTpts) = {[col2 col2]};
 
         end
@@ -230,9 +262,9 @@ for iiWells = 1:szAllWells
         end
         
         % set column names
-        trackAll.Properties.VariableNames = {s.well, s.site, 'track_id', s.time, s.posx, s.posy};
-        trackSeq.Properties.VariableNames = {s.well, s.site, 'track_id', 'track_start', 'track_end'};
-        trackCon.Properties.VariableNames = {s.well, s.site, 'track_id', s.time, 'ObjectNumber'};
+        trackAll.Properties.VariableNames = {par.col_well, par.col_fov, 'track_id', par.col_frame, par.col_posx, par.col_posy};
+        trackSeq.Properties.VariableNames = {par.col_well, par.col_fov, 'track_id', 'track_start', 'track_end'};
+        trackCon.Properties.VariableNames = {par.col_well, par.col_fov, 'track_id', par.col_frame, 'ObjectNumber'};
 
         % Write to a CSV
         writetable(trackAll, fname.tr)
