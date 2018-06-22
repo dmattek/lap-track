@@ -111,9 +111,18 @@ if (sum(contains(s.vars, par.col_frame)) == 0)
 end
 
 bWellExists = 1;
-if (sum(contains(s.vars, par.col_well)) == 0)
+if (sum(contains(s.vars, par.col_well)) == 0 || par.col_well == 'none')
   disp('No column with metadata well; assuming one well')
   bWellExists = 0;
+  szAllWells = 1;
+  all.wells = '0';
+  par.col_well = 'Image_Metadata_Well'
+else
+    bWellExists = 1;
+    disp('Column with metadata well exists')
+    all.wells = cell2mat(sTmp);
+    szAllWells = size(all.wells);
+    szAllWells = szAllWells(1);
 end
 
 if (sum(contains(s.vars, par.col_fov)) == 0)
@@ -126,16 +135,16 @@ end
 
 % define iterators
 % get range of wells
-sTmp = unique(dat.(par.col_well));
-if (sum(isnan(sTmp{1})) > 0)
-  disp('Column with metadata well contains NaN; assuming one well')
-  szAllWells = 1;
-  all.wells = '0';
-  bWellExists = 0;
-else
-  all.wells = cell2mat(sTmp);
-  szAllWells = size(all.wells);
-  szAllWells = szAllWells(1);
+
+if (bWellExists)
+  sTmp = unique(dat.(par.col_well));
+  % even if the column with metadata well exists, it might contain NaN's; checking here
+  if (sum(isnan(sTmp{1})) > 0)
+    disp('Column with metadata well contains NaN; assuming one well')
+    szAllWells = 1;
+    all.wells = '0';
+    bWellExists = 0;
+  end
 end
 
 % get range of FOV
@@ -145,7 +154,7 @@ all.fovs = unique(dat.(par.col_fov));
 for iiWells = 1:szAllWells
     for iiFovs = 1:length(all.fovs)
 
-        % create file names for outputs
+        % create filenames for outputs
         % file with tracks
         curr.well = all.wells(iiWells, :);
         curr.fov = all.fovs(iiFovs);
@@ -159,17 +168,7 @@ for iiWells = 1:szAllWells
         % script)
         fname.seq = sprintf('%s/%s_Well%s_S%02d_seq.csv', fname.pathlap, fname.cpcsvcore, curr.well, curr.fov);
 
-        % write header to connectivity file
-        fid = fopen(fname.con, 'w');
-        fprintf(fid, 'Image_Metadata_Well_num,Image_Metadata_Site,track_id,Image_Metadata_T,ObjectNumber\n');
-        fclose(fid);
-
-        % write hearder to sequence file
-        fid = fopen(fname.seq, 'w');
-        fprintf(fid, 'Image_Metadata_Well_num,Image_Metadata_Site,track_id,track_start,track_end\n');
-        fclose(fid);
-        
-        
+        % console info output 
         fprintf('\n=============================\nAnalyzing well %s (%d out of %d)\n', curr.well, iiWells, szAllWells)
         fprintf('Analyzing FOV %d (%d out of %d)\n', curr.fov, iiFovs, length(all.fovs))
 

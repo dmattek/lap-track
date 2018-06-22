@@ -38,14 +38,10 @@
 #
 # Example usage:
 #  assume we have a directory ~/myexp1/cp.out/output/out_0001
-#  with a sub-folder "segmented" where segmented png's were saved by CP,
-#  and objNuc.csv file with CP output containing X-Y positions of single cells.
 #
 # Run:
-#  ./runLAP.sh -n 10 -i ~/myexp1/cp.out/output/out_0001 -s segmented -o objNuc.csv 
+#  ./runLAP.sh -i ~/myexp1/cp.out/output/out_0001 -c lapconfig.cfg  
 #
-# where "-n 10" is the threshold for minimum length of single-cell tracks that will be output in the final CSV
-# 
 # Tested on:
 # Ubuntu 16.04.2 LTS
 # MATLAB 2016b
@@ -60,46 +56,16 @@
 # Directory to work on
 INDIRFLAG=false
 
-# Defined by command-line parameters
-# Threshold for track length; only tracks longer than that will be saved
-NTRACKLENGTH=10
+# Config file
+CFGFFLAG=false
 
-# Core of the CSV file name with raw CP output (e.g. objNuclei; don't include the csv extension)
-FCPRAW="objNuclei"
-
-# Sub-directory (relative to $INDIR) with segmented images
-# Track ID will be overlayed on these images
-DIRIMSEG="segmented"
-
-# Column names with position X and Y
-COLX="objNuc_Location_Center_X"
-COLY="objNuc_Location_Center_Y"
-COLTIME="Image_Metadata_T"
-COLWELL="Image_Metadata_Well"
-COLFOV="Image_Metadata_Site"
-COLID="track_id"
-
-# Other definitions
-# Extension of csv files
-FCPEXT=".csv"
-
-# Suffix for the filename with 1-line header
-FCPOUT1LH="_1line"
-
-# Prefix for the folder with LAP tracking output
-DIRLAPOUT="trackXY_"
-
-# Suffix for folder name with segmented images with track ID overlaid
-DIRIMOVEREXT="_over"
-
-
-# Path to directory with cleanCPout.R script.
+# Path to directory with cleanCPoutCFG.R script
 # The script converts CP output from 2- to 1-line header, and remove unnecessary or duplicated columns
 # The script is part of https://github.com/dmattek/Paolo-MCF10A-timelapse.git
 DIRRSCR="/opt/local/misc-improc/Paolo-MCF10A-timelapse"
 
-# Path to directory with trackFromCPsepfiles.m script to perform LAP tracking
-DIRMSCR="/opt/local/misc-improc/lap-track-new"
+# Path to directory with trackFromCPsepfilesCFG.m script to perform LAP tracking
+DIRMSCR="/opt/local/misc-improc/lap-track"
 
 # Path to directory with script_overlay.py script
 # The script is part of https://github.com/majpark21/image_analysis.git
@@ -110,7 +76,7 @@ DIRUSCR="/opt/local/u-track/software"
 
 
 # READ ARGUMENTS
-TEMP=`getopt -o i:s:o:n:x:y:t:w:f:d: --long indir:,segdir:,outfile:,ntracklength:,colposx:,colposy:,coltime:,colwell:,colfov:,colid: -n 'runLAP.sh' -- "$@"`
+TEMP=`getopt -o i:c: --long indir:cfgfile: -n 'runLAPcfg.sh' -- "$@"`
 eval set -- "$TEMP"
 
 while true ; do
@@ -121,50 +87,11 @@ while true ; do
                 "") shift 2 ;;
                 *) INDIR=$2 ; shift 2 ;;
             esac ;;
-        -s|--segdir)
+        -c|--cfgfile)
+	    CFGFFLAG=true ;
             case "$2" in
                 "") shift 2 ;;
-                *) DIRIMSEG=$2 ; shift 2;; 
-            esac ;;
-        -o|--outfile)
-            case "$2" in
-                "") shift 2 ;;
-                *) FCPRAW=$2 ; shift 2;; 
-            esac ;;
-        -n|--ntracklength)
-            case "$2" in
-                "") shift 2 ;;
-                *) NTRACKLENGTH=$2 ; shift 2 ;;
-            esac ;;
-        -x|--colposx)
-            case "$2" in
-                "") shift 2 ;;
-                *) COLX=$2 ; shift 2 ;;
-            esac ;;
-        -y|--colposy)
-            case "$2" in
-                "") shift 2 ;;
-                *) COLY=$2 ; shift 2 ;;
-            esac ;;
-        -t|--coltime)
-            case "$2" in
-                "") shift 2 ;;
-                *) COLTIME=$2 ; shift 2 ;;
-            esac ;;
-        -w|--colwell)
-            case "$2" in
-                "") shift 2 ;;
-                *) COLWELL=$2 ; shift 2 ;;
-            esac ;;
-        -f|--colfov)
-            case "$2" in
-                "") shift 2 ;;
-                *) COLLFOV=$2 ; shift 2 ;;
-            esac ;;
-        -d|--colid)
-            case "$2" in
-                "") shift 2 ;;
-                *) COLID=$2 ; shift 2 ;;
+                *) CFGF=$2 ; shift 2 ;;
             esac ;;
         --) shift ; break ;;
         *) echo "Internal error!" ; exit 1 ;;
@@ -173,36 +100,58 @@ done
 
 if ! $INDIRFLAG
 then
-    echo "Working directory must be specified with -i"
+    echo -e "\nWorking directory must be specified with -i\n"
+    exit
+fi
+
+if ! $CFGFFLAG
+then
+    echo -e "\nConfig file (e.g. lapconfig.csv) must be specified with -c\n"
     exit
 fi
 
 
-# Final setup of directories and filenames
-# Entire filename with raw CP output
-FCPRAWALL=$FCPRAW$FCPEXT
-
-# Entire filename with 1-line header CP output
-FCP1LHALL=$FCPRAW$FCPOUT1LH$FCPEXT
-
-# Entire directory (relative to $INDIR) name to place LAP output
-DIRLAPOUTALL=$DIRLAPOUT$FCPRAW$FCPOUT1LH
-
-# Sub-directory (relative to $INDIR) to place images with overlaid track ID
-DIRIMOVER=$DIRIMSEG$DIRIMOVEREXT
-
 # Convert relative path to absolute
 INDIRFULL=`readlink -f $INDIR`
-
+CFGFFULL=`readlink -f $CFGF`
 
 
 # ANALYSIS
 
 # Run R script to convert CP output from 2- to 1-line header, and remove unnecessary or duplicated columns
 # Takes the input file and writes the result in $FCP1LHALL
-echo "1. Convert and clean CP output"
-echo "Input file:  $INDIRFULL/$FCPRAWALL"
-echo "Output file: $INDIR/$FCP1LHALL"
+echo -e "\n1. Convert and clean CP output"
+echo "Config file: $CFGF"
+echo "Input file:  $INDIRFULL"
 
-runrscript.sh $DIRRSCR/cleanCPout.R $INDIRFULL/$FCPRAWALL $INDIR/$FCP1LHALL
+runrscript3.5.sh $DIRRSCR/cleanCPoutCFG.R $CFGFFULL $INDIRFULL
+
+
+
+# Run MATLAB script with LAP tracking
+# Changes to $INDIR directory, places output in $DIRLAPOUTALL sub-directory
+# Matlab script works with the prefix for the output directory
+
+echo -e "\n2. Run LAP tracking in Matlab"
+CMDMAT='cd '"'"$DIRMSCR"'"'; path(pathdef); trackFromCPsepfilesCFG('"'"$CFGFFULL"'"', '"'"$INDIRFULL"'"'); quit'
+echo $CMDMAT
+matlab -nodisplay -nosplash -nodesktop -r "$CMDMAT"
+
+
+# Overlay track IDs onto segmented images
+# The resulting images are placed in a directory ...
+echo -e "\n3. Overlay track IDs onto segmented images"
+
+python3 $DIRPSCR/script_overlay_cfg.py -c $CFGFFULL -d $INDIRFULL 
+
+
+# Create final CSV with origianal CP output + track ID
+# Arguments for this script are:
+# - absolute path to directory to work on
+# - filename with CP output (1-line header; no extension, just core filename)
+# - sub-directory with LAP output
+# - integer threshold for track lengths; only track longer than that will be saved
+echo -e "\n4. Generate final CSV with tracks"
+runrscript.sh $DIRRSCR/analConnCFG.R $CFGFFULL $INDIRFULL
+
 
