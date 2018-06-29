@@ -29,8 +29,6 @@ function trackRes = trackFromCPsepfilesCFG(inFileConfig, inPathCP)
 trackRes=0;
 
 %% Parse config file
-%inFileConfig = 'lapconfig.csv';
-%inPathCP = '/Users/maciekd/Projects/Olivier/modelDatasets/timelapse/2018-03-28_MCF10Amutants_sparse_5x103_H2B-miRFP_ERK-Turq_FoxO-NeonGreen_10xAir_T5min_NoStim-0ngmlEGF_6h-starving_CO2/cp.out/output/out_0001';
 
 % Set params
 % column name in config file with parameter names
@@ -55,7 +53,7 @@ cfgpar.col_posx = 'column_posx';
 cfgpar.col_posy = 'column_posy';
 
 % Read config file
-cfgtab = readtable(inFileConfig);
+cfgtab = readtable(inFileConfig, 'ReadVariableNames', true, 'ReadRowNames', false, 'delimiter', ',');
 
 % Assign parameters from the config file
 par.cpout1line = assignPar(cfgpar.cpout1line, cfgtab, cfgpar.colpar, cfgpar.colval);
@@ -111,13 +109,15 @@ if (sum(contains(s.vars, par.col_frame)) == 0)
 end
 
 bWellExists = 1;
-if (sum(contains(s.vars, par.col_well)) == 0 || par.col_well == 'none')
+
+if (sum(contains(s.vars, par.col_well)) == 0 || strcmp(par.col_well, 'none'))
   disp('No column with metadata well; assuming one well')
   bWellExists = 0;
   szAllWells = 1;
   all.wells = '0';
   par.col_well = 'Image_Metadata_Well'
 else
+    sTmp = unique(dat.(par.col_well));
     bWellExists = 1;
     disp('Column with metadata well exists')
     all.wells = cell2mat(sTmp);
