@@ -3,10 +3,12 @@
 # Usage:
 # runLAP_array -i foo/ [-nJct]
 
-usage="This script run LAP tracking algorithm on CellProfiler CSV output. In addition it returns images overlaid with track ID.
-It can be run on a directory which contains subdirectories, each of which contains an independent dataset for tracking.
+usage="This script is a wrapper for runLAP.sh. It submits to a SLURM array a LAP tracking analysis on output from CellProfiler. 
+It can be run on a directory that contains subdirectories, each containing an independent dataset for tracking. Each of such datasets will be submitted to a queue as an independent job within SLURM array.
+
 See runLAP.sh for details of tracking steps.
-It proceeds by first creating a file for submission of a SLURM array. In this array each subdirectoy is a different tak.
+It proceeds by first creating a file for submission of a SLURM array. In this array, each subdirectoy is a different task.
+
 Usage:
 $(basename "$0") [-h]
 where:

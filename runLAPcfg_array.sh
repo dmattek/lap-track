@@ -1,20 +1,21 @@
 #!/bin/bash
 
 # Usage:
-# runLAP_array -i foo/ [-nJct]
+# runLAPcfg_array.sh -i output -c lapconfig.csv [-nJct]
 
-usage="This script run LAP tracking algorithm on CellProfiler CSV output. In addition it returns images overlaid with track ID.
-It can be run on a directory which contains subdirectories, each of which contains an independent dataset for tracking.
-See runLAP.sh for details of tracking steps.
-It proceeds by first creating a file for submission of a SLURM array. In this array each subdirectoy is a different tak.
+usage="This script is a wrapper for runLAPcfg.sh. It submits to a SLURM array a LAP tracking analysis on output from CellProfiler. 
+It can be run on a directory that contains subdirectories, each containing an independent dataset for tracking. Each of such datasets will be submitted to a queue as an independent job within SLURM array.
+
+See runLAPcfg.sh for details of tracking steps.
+It proceeds by first creating a file for submission of a SLURM array. In this array, each subdirectoy is a different task.
 Usage:
 $(basename "$0") [-h]
 where:
 	-h | --help		Show this Help text.
 	-i | --indir		Path to data directory. This argument is mandatory.
+	-c | --cfgfile		Config file for LAP tracking, e.g. lapconfig.csv. This argument is mandatory.
 	-J | --Jobname		Name of the SLURM job (default laptrack).
-	-c | --core		Number of cores used by the array (default 1).
-	-t | --time		Walltime for the task execution in format day-h:min (default 5 hours)."
+	-T | --time		Walltime for the task execution in format day-h:min (default 5 hours)."
 
 
 # -------------- Bash part for taking inputs -----------

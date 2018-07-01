@@ -2,9 +2,9 @@
 #
 # Author            : Maciej Dobrzynski
 #
-# Date created      : 20180328
+# Date created      : 20180701
 #
-# Purpose           : Run LAP tracking analysis in the specified directory.
+# Purpose           : Run LAP tracking analysis in the specified directory using lapconfig file.
 #
 # Detailed          : The script performs a series of steps
 #                     1. Load raw CellProfiler CSV output, 
@@ -40,8 +40,11 @@
 #  assume we have a directory ~/myexp1/cp.out/output/out_0001
 #
 # Run:
-#  ./runLAP.sh -i ~/myexp1/cp.out/output/out_0001 -c lapconfig.cfg  
+#  ./runLAP.sh -i ~/myexp1/cp.out/output/out_0001 -c lapconfig.csv
 #
+# The lapconfig.csv file is a two-column csv with a header: parameter, value.
+# The file contains parameters for steps of the analysis listed above.
+# 
 # Tested on:
 # Ubuntu 16.04.2 LTS
 # MATLAB 2016b
