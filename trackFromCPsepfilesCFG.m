@@ -1,16 +1,16 @@
 % Process CellProfiler output with XY positions of objects 
 % in a time-lapse experiment.
 % Wrapper for u-track LAP tracking
-% Example call:
-% trackFromCPsepfiles('exp1/cp.out/output/out_0001', 'objNuclei_1line.csv',
-% 'trackXY_', '/opt/local/u-track/software')
 % 
 % Input params:
 % inFileConfig - A csv file with parameter names; should contain two
-% columns with a header (parameter, value)
-%
+%                columns with a header (parameter, value)
 % inPathCP - Absolute path to directory with CP merged output
 %
+% Example call:
+% trackFromCPsepfiles('exp1/cp.out/lapconfig.csv', 'exp1/cp.out/output/out_0001')
+%
+% Note: uses assignPar function for a
 % Parameters used from the config file:
 % file_cpout_1line
 % dir_lapout
@@ -55,14 +55,66 @@ cfgpar.col_posy = 'column_posy';
 % Read config file
 cfgtab = readtable(inFileConfig, 'ReadVariableNames', true, 'ReadRowNames', false, 'delimiter', ',');
 
-% Assign parameters from the config file
-par.cpout1line = assignPar(cfgpar.cpout1line, cfgtab, cfgpar.colpar, cfgpar.colval);
-par.dirtracks  = assignPar(cfgpar.dirtracks,  cfgtab, cfgpar.colpar, cfgpar.colval);
-par.col_well   = assignPar(cfgpar.col_well,   cfgtab, cfgpar.colpar, cfgpar.colval);
-par.col_fov    = assignPar(cfgpar.col_fov,    cfgtab, cfgpar.colpar, cfgpar.colval);
-par.col_frame  = assignPar(cfgpar.col_frame,  cfgtab, cfgpar.colpar, cfgpar.colval);
-par.col_posx   = assignPar(cfgpar.col_posx,   cfgtab, cfgpar.colpar, cfgpar.colval);
-par.col_posy   = assignPar(cfgpar.col_posy,   cfgtab, cfgpar.colpar, cfgpar.colval);
+% Assign parameters from the config file (essential)
+par.cpout1line = assignPar(cfgpar.cpout1line, cfgtab, cfgpar.colpar, cfgpar.colval, true);
+par.dirtracks  = assignPar(cfgpar.dirtracks,  cfgtab, cfgpar.colpar, cfgpar.colval, true);
+par.col_well   = assignPar(cfgpar.col_well,   cfgtab, cfgpar.colpar, cfgpar.colval, true);
+par.col_fov    = assignPar(cfgpar.col_fov,    cfgtab, cfgpar.colpar, cfgpar.colval, true);
+par.col_frame  = assignPar(cfgpar.col_frame,  cfgtab, cfgpar.colpar, cfgpar.colval, true);
+par.col_posx   = assignPar(cfgpar.col_posx,   cfgtab, cfgpar.colpar, cfgpar.colval, true);
+par.col_posy   = assignPar(cfgpar.col_posy,   cfgtab, cfgpar.colpar, cfgpar.colval, true);
+
+%% Assign parameters from the config file (non-essential, with default)
+% gapCloseParam, parameters1, parameters2 are used in
+% myScriptTrackGeneralCFG to run tracking
+% ONLY essential parameters are assigned here, the remaining are in
+% myScriptTrackGeneralCFG
+
+% general gap closing parameters
+% maximum allowed time gap (in frames) between a track segment end and a track segment start that allows linking them.
+gapCloseParam.timeWindow = assignPar('lap_timewindow', cfgtab, cfgpar.colpar, cfgpar.colval, false, 2);
+
+% Set 1 if merging and splitting are to be considered, 2 if only merging is to be considered, 3 if only splitting is to be considered, 0 if no merging or splitting are to be considered.
+gapCloseParam.mergeSplit = assignPar('lap_mergesplit', cfgtab, cfgpar.colpar, cfgpar.colval, false, 0);
+
+% minimum length of track segments from linking to be used in gap closing.
+gapCloseParam.minTrackLen = assignPar('lap_mintracklen', cfgtab, cfgpar.colpar, cfgpar.colval, false, 1);
+
+
+% parameters for cost matrix for frame-to-frame linking
+% use linear motion Kalman filter
+parameters1.linearMotion = assignPar('lap_fflink_linmotion', cfgtab, cfgpar.colpar, cfgpar.colval, false, 0);
+
+% minimum allowed search radius. The search radius is calculated on the spot in the code given a feature's motion parameters. If it happens to be smaller than this minimum, it will be increased to the minimum.
+parameters1.minSearchRadius = assignPar('lap_fflink_minrad', cfgtab, cfgpar.colpar, cfgpar.colval, false, 10);
+
+% maximum allowed search radius. Again, if a feature's calculated search radius is larger than this maximum, it will be reduced to this maximum.
+parameters1.maxSearchRadius = assignPar('lap_fflink_maxrad', cfgtab, cfgpar.colpar, cfgpar.colval, false, 20);
+
+% multiplication factor to calculate search radius from standard deviation
+parameters1.brownStdMult = assignPar('lap_fflink_brownstdmult', cfgtab, cfgpar.colpar, cfgpar.colval, false, 3);
+
+
+
+% cost matrix for gap closing
+% needed all the time
+
+% use linear motion Kalman filter
+parameters2.linearMotion = assignPar('lap_gapclose_linmotion', cfgtab, cfgpar.colpar, cfgpar.colval, false, 0);
+
+% minimum allowed search radius. The search radius is calculated on the spot in the code given a feature's motion parameters. If it happens to be smaller than this minimum, it will be increased to the minimum.
+parameters2.minSearchRadius = assignPar('lap_gapclose_minrad', cfgtab, cfgpar.colpar, cfgpar.colval, false, 10);
+
+% maximum allowed search radius. Again, if a feature's calculated search radius is larger than this maximum, it will be reduced to this maximum.
+parameters2.maxSearchRadius = assignPar('lap_gapclose_maxrad', cfgtab, cfgpar.colpar, cfgpar.colval, false, 10);
+
+% maximum angle between the directions of motion of two tracks that allows linking them (and thus closing a gap). Think of it as the equivalent of a searchRadius but for angles.
+parameters2.maxAngleVV = assignPar('lap_gapclose_maxangle', cfgtab, cfgpar.colpar, cfgpar.colval, false, 30);
+
+% optional; if not input, 1 will be used (i.e. no penalty)
+% penalty for increasing temporary disappearance time (disappearing for n frames gets a penalty of gapPenalty^(n-1)).
+parameters2.gapPenalty = assignPar('lap_gapclose_gappen', cfgtab, cfgpar.colpar, cfgpar.colval, false, 1.5);
+
 
 
 
@@ -219,7 +271,9 @@ for iiWells = 1:szAllWells
         movieInfo = struct(f1, v1, f2, v2, f3, v3);
 
         % Build tracks from x-y coordinates using u-track
-        myScriptTrackGeneral
+        % The script defines several parameters for linking frames and
+        % closing gaps
+        myScriptTrackGeneralCFG
 
         fprintf('Finished building tracks. Saving results for well:%s s:%d\n', curr.well, curr.fov)
         

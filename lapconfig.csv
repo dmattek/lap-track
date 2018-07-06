@@ -1,0 +1,18 @@
+parameter,value,comment
+dir_out,output,
+dir_segmented,segmented,
+dir_overlay,segmented_over,
+dir_lapout,trackXY_objNuclei_1line,Directory with LAP output csv files - input for trackFromCPsepfilesCFG.m analConnCFG.R
+file_cpout,objNuclei.csv,File with raw CP output - usually a 2-line header
+file_cpout_1line,objNuclei_1line.csv,Cleaned CP output with reduced number of columns and a 1-line header - input for trackFromCPsepfilesCFG.m analConnCFG.R
+column_well,Image_Metadata_Well,
+column_fov,Image_Metadata_Site,
+column_frame,Image_Metadata_T,
+column_objnum_cp,objNuclei_ObjectNumber,Object number column in CP output
+column_objnum_conn,ObjectNumber,Object number column in LAP track output
+column_trackid,track_id,
+column_posx,objNuclei_Location_Center_X,
+column_posy,objNuclei_Location_Center_Y,
+min_track_length,10,Minimum length of tracks included in the final output (unit: frames)
+overlay_shift,"(-4, -5)",
+clean_cols, "Image_Metadata_C,Image_Metadata_Channel,Image_Metadata_ChannelName,Image_Metadata_ColorFormat,Image_Metadata_FileLocation,Image_Metadata_Frame,Image_Metadata_Plate,Image_Metadata_SizeC,Image_Metadata_SizeT,Image_Metadata_SizeX,Image_Metadata_SizeY,Image_Metadata_SizeZ,Image_Metadata_Z,Image_Metadata_Series",columns for removal used by cleanCPoutCFG.R
