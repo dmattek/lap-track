@@ -22,7 +22,16 @@
 % column_posx
 % column_posy
 % 
-
+% Additionally, several optional parameters for LAP tracking can be defined
+% in the coniguration fie (lapconfig.csv):
+%
+% lap_timewindow
+% lap_mergesplit
+% lap_mintracklen
+% lap_fflink_linmotion
+% lap_fflink_minrad
+% lap_fflink_maxrad
+% lap_fflink_brownstdmult
 
 function trackRes = trackFromCPsepfilesCFG(inFileConfig, inPathCP)
 

@@ -16,3 +16,15 @@ column_posy,objNuclei_Location_Center_Y,
 min_track_length,10,Minimum length of tracks included in the final output (unit: frames)
 overlay_shift,"(-4, -5)",
 clean_cols, "Image_Metadata_C,Image_Metadata_Channel,Image_Metadata_ChannelName,Image_Metadata_ColorFormat,Image_Metadata_FileLocation,Image_Metadata_Frame,Image_Metadata_Plate,Image_Metadata_SizeC,Image_Metadata_SizeT,Image_Metadata_SizeX,Image_Metadata_SizeY,Image_Metadata_SizeZ,Image_Metadata_Z,Image_Metadata_Series",columns for removal used by cleanCPoutCFG.R
+lap_timewindow, 2, Maximum allowed time gap in frames between a track segment end and a track segment start that allows linking them
+lap_mergesplit, 0, Set 1 if merging and splitting are to be considered. 2 if only merging is to be considered. 3 if only splitting is to be considered. 0 if no merging or splitting are to be considered.
+lap_mintracklen, 1, Minimum length of track segments from linking to be used in gap closing
+lap_fflink_linmotion, 0, Set 1 to use linear motion Kalman filter
+lap_fflink_minrad, 10, Minimum allowed search radius. The search radius is calculated on the spot in the code given a feature's motion parameters. If it happens to be smaller than this minimum it will be increased to the minimum.
+lap_fflink_maxrad, 20, Maximum allowed search radius. If a feature's calculated search radius is larger than this maximum it will be reduced to this maximum.
+lap_fflink_brownstdmult, 3, multiplication factor to calculate search radius from standard deviation
+lap_gapclose_linmotion, 0, Set 1 to use linear motion Kalman filter 
+lap_gapclose_minrad, 10, Minimum allowed search radius
+lap_gapclose_maxrad, 10, Maximum allowed search radius
+lap_gapclose_maxangle, 30, Maximum angle between the directions of motion of two tracks that allows linking them and thus closing a gap
+lap_gapclose_gappen, 1.5, Penalty for increasing temporary disappearance time
