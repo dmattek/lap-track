@@ -155,6 +155,6 @@ python3 $DIRPSCR/script_overlay_cfg.py -c $CFGFFULL -d $INDIRFULL
 # - sub-directory with LAP output
 # - integer threshold for track lengths; only track longer than that will be saved
 echo -e "\n4. Generate final CSV with tracks"
-runrscript.sh $DIRRSCR/analConnCFG.R $CFGFFULL $INDIRFULL
+runrscript3.5.sh $DIRRSCR/analConnCFG.R $CFGFFULL $INDIRFULL
 
 
