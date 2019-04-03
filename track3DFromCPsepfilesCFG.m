@@ -8,7 +8,7 @@
 % inPathCP - Absolute path to directory with CP merged output
 %
 % Example call:
-% trackFromCPsepfiles('exp1/cp.out/lapconfig.csv', 'exp1/cp.out/output/out_0001')
+% trackFromCPsepfilesCFG('exp1/cp.out/lapconfig.csv', 'exp1/cp.out/output/out_0001')
 %
 % Note: uses assignPar function for a
 % Parameters used from the config file:
@@ -60,6 +60,7 @@ cfgpar.col_fov = 'column_fov';
 cfgpar.col_frame = 'column_frame';
 cfgpar.col_posx = 'column_posx';
 cfgpar.col_posy = 'column_posy';
+cfgpar.col_posz = 'column_posz';
 
 % Read config file
 cfgtab = readtable(inFileConfig, 'ReadVariableNames', true, 'ReadRowNames', false, 'delimiter', ',');
@@ -72,6 +73,7 @@ par.col_fov    = assignPar(cfgpar.col_fov,    cfgtab, cfgpar.colpar, cfgpar.colv
 par.col_frame  = assignPar(cfgpar.col_frame,  cfgtab, cfgpar.colpar, cfgpar.colval, true);
 par.col_posx   = assignPar(cfgpar.col_posx,   cfgtab, cfgpar.colpar, cfgpar.colval, true);
 par.col_posy   = assignPar(cfgpar.col_posy,   cfgtab, cfgpar.colpar, cfgpar.colval, true);
+par.col_posz   = assignPar(cfgpar.col_posz,   cfgtab, cfgpar.colpar, cfgpar.colval, true);
 
 %% Assign parameters from the config file (non-essential, with default)
 % gapCloseParam, parameters1, parameters2 are used in
@@ -244,17 +246,24 @@ for iiWells = 1:szAllWells
 
         % get range of frame numbers (here from time column of CP output)
         fov.tpts = unique(datI.(par.col_frame));
-
+        
+        % offset to add to time point when writing output
+        % time points in LAP track output start at 1, but the actual number
+        % is the experiment may differ
+        tptsoffset = min(fov.tpts) - 1;
+        
         fprintf('%d frames\n\n', length(fov.tpts))
 
         % prepare cell array for analysis with u-track
         f1 = 'xCoord';
         f2 = 'yCoord';
-        f3 = 'amp';
+        f3 = 'zCoord';
+        f4 = 'amp';
 
         v1 = {};
         v2 = {};
         v3 = {};
+        v4 = {};
 
         for iiTpts = 1:length(fov.tpts)
 
@@ -270,16 +279,17 @@ for iiWells = 1:szAllWells
             col1 = datI.(par.col_posy)(datI.(par.col_frame) == fov.tpts(iiTpts));
             v2(:, iiTpts) = {[col1 col2]};
     
-            % Measurement filled as zeroes
-            %col1 = datI.(s.meas)(datI.(par.col_frame) == fov.tpts(iiTpts));
-            v3(:, iiTpts) = {[col2 col2]};
+            col1 = datI.(par.col_posz)(datI.(par.col_frame) == fov.tpts(iiTpts));
+            v3(:, iiTpts) = {[col1 col2]};
 
+            col1 = ones(length(col2), 1);
+            v4(:, iiTpts) = {[col1 col2]};
         end
 
         % build final input for scriptTrackGeneral
-        movieInfo = struct(f1, v1, f2, v2, f3, v3);
+        movieInfo = struct(f1, v1, f2, v2, f3, v3, f4, v4);
 
-        % Build tracks from x-y coordinates using u-track
+        % Build tracks from x-y-z coordinates using u-track
         % The script defines several parameters for linking frames and
         % closing gaps
         myScriptTrackGeneralCFG
@@ -296,22 +306,28 @@ for iiWells = 1:szAllWells
         % loop over all tracks
         for ii = 1:length(tracksFinal)
             % write sequence file (holds start and end frame of the track)
+            % WARNING: the output from tracking returns tracks that start
+            % at index 1; this might differ from the actual frame numbers
+            % in the input set (fov.tpts), e.g. when individual time points
+            % are in separate TIFFs, and some frames are omitted at the
+            % start; use offset only when writing out the output which is
+            % then used for merging tracks with original CP output
             seqI = tracksFinal(ii).seqOfEvents;
             trackStart = tracksFinal(ii).seqOfEvents(1,1);
             trackEnd   = tracksFinal(ii).seqOfEvents(2,1);            
-            %dlmwrite(path.seq, [iiWells; all.fovs(iiFovs); ii; trackStart-1; trackEnd-1]', '-append');
             
-            trackSeq = [trackSeq; table(cellstr(curr.well), curr.fov, ii, trackStart-1, trackEnd-1)];
+            % warning: potential source of errors
+            % watch out for indices of start and end of the track; start
+            % from 0 or 1?
+            trackSeq = [trackSeq; table(cellstr(curr.well), curr.fov, ii, trackStart + tptsoffset, trackEnd + tptsoffset)];
             
             % write connectivity file
             connI = tracksFinal(ii).tracksFeatIndxCG;
             connIlength = length(connI);
             
             if ((trackEnd - trackStart + 1) == connIlength)
-                %dlmwrite(path.con, [repelem(iiWells, connIlength); repelem(all.fovs(iiFovs), connIlength); repelem(ii, connIlength); (trackStart-1):(trackEnd-1); connI]', '-append');
-                trackCon = [trackCon; table(repelem(cellstr(curr.well), connIlength, 1), repelem(curr.fov, connIlength, 1), repelem(ii, connIlength, 1), ((trackStart-1):(trackEnd-1))', connI')];
+                trackCon = [trackCon; table(repelem(cellstr(curr.well), connIlength, 1), repelem(curr.fov, connIlength, 1), repelem(ii, connIlength, 1), ((trackStart + tptsoffset):(trackEnd + tptsoffset))', connI')];
             else
-                %dlmwrite(path.con, [repelem(iiWells, connIlength); repelem(all.fovs(iiFovs), connIlength); repelem(ii, connIlength); repelem(-1, connIlength); connI]', '-append');
                 trackCon = [trackCon; table(repelem(cellstr(curr.well), connIlength, 1), repelem(curr.fov, connIlength, 1), repelem(ii, connIlength, 1), repelem(-1, connIlength, 1), connI')];
             end
             
@@ -320,11 +336,11 @@ for iiWells = 1:szAllWells
             trackLength = length(trackI) / 8;
             matI = reshape(tracksFinal(ii).tracksCoordAmpCG, [8 trackLength])';
                         
-            trackAll = [trackAll; table(repelem(cellstr(curr.well), trackLength, 1), repelem(curr.fov, trackLength, 1), repelem(ii, trackLength, 1), ((trackStart-1):(trackEnd-1))', matI(:, 1), matI(:, 2))];
+            trackAll = [trackAll; table(repelem(cellstr(curr.well), trackLength, 1), repelem(curr.fov, trackLength, 1), repelem(ii, trackLength, 1), ((trackStart + tptsoffset):(trackEnd + tptsoffset))', matI(:, 1), matI(:, 2), matI(:, 3))];
         end
         
         % set column names
-        trackAll.Properties.VariableNames = {par.col_well, par.col_fov, 'track_id', par.col_frame, par.col_posx, par.col_posy};
+        trackAll.Properties.VariableNames = {par.col_well, par.col_fov, 'track_id', par.col_frame, par.col_posx, par.col_posy, par.col_posz};
         trackSeq.Properties.VariableNames = {par.col_well, par.col_fov, 'track_id', 'track_start', 'track_end'};
         trackCon.Properties.VariableNames = {par.col_well, par.col_fov, 'track_id', par.col_frame, 'ObjectNumber'};
 

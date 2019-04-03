@@ -77,7 +77,16 @@ saveResults = 0; %don't save results
 verbose = 1;
 
 %problem dimension
-probDim = 2;
+if (isfield(movieInfo, 'xCoord') && isfield(movieInfo, 'yCoord'))
+    if (isfield(movieInfo, 'zCoord'))
+        probDim = 3;
+    else
+        probDim = 2;
+    end
+else
+    disp('Provide at least X and Y coordinates.')
+    return
+end
 
 %% tracking function call
 
