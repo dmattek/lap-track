@@ -56,6 +56,18 @@ LOCfreadCSV2lineHeader = function(in.file, in.col.rem = NULL) {
 }
 
 
+# keep desired number of significant digits in a data.table
+LOCsignif_dt <- function(dt, digits) {
+  loc.dt = copy(dt)
+  
+  loc.cols <- vapply(loc.dt, is.double, FUN.VALUE = logical(1))
+  loc.cols = names(loc.cols[loc.cols])
+  
+  loc.dt[, (loc.cols) := signif(.SD, digits), .SDcols = loc.cols]
+  
+  return(loc.dt)
+}
+
 # parser of command-line arguments from:
 # https://www.r-bloggers.com/passing-arguments-to-an-r-script-from-command-lines/
 
@@ -69,7 +81,9 @@ option_list = list(
   make_option(c("-r", "--remcols"), type="character", default="", 
               help="quoted, no spaces, comma-separated list with column names to remove [default= %default; e.g. \"Image_Metadata_C,Image_Metadata_Z\"]", metavar="character"),
   make_option(c("-z", "--gzip"), action="store_true", default="FALSE",
-              help="gzip the resulting csv [default= %default]")
+              help="gzip the resulting csv [default= %default]"),
+  make_option(c("-n", "--nsignif"), type="integer", default=6, 
+              help="number of significant digits in numeric columns [default= %default]", metavar="number")
 );
 
 opt_parser = OptionParser(option_list=option_list);
@@ -128,8 +142,11 @@ cat("\n")
 dt.all = do.call(rbind, lapply(s.files, function(x) LOCfreadCSV2lineHeader(x, in.col.rem = params$s.col.rem)))
 
 # write merged dataset
-fwrite(dt.all, file = file.path(params$s.dir.out, params$s.file.data), row.names = F) 
+fwrite(LOCsignif_dt(dt.all, opt$nsignif), 
+       file = file.path(params$s.dir.out, params$s.file.data), 
+       row.names = F) 
+
 if (opt$gzip) {
-        cat("\nMerged file will be gzipped\n")
-        gzip(file.path(params$s.dir.out, params$s.file.data))
+  cat("\nMerged file will be gzipped\n")
+  gzip(file.path(params$s.dir.out, params$s.file.data))
 }
