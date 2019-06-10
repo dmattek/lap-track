@@ -35,7 +35,9 @@ option_list = list(
   make_option(c("-r", "--remcols"), type="character", default="", 
               help="quoted, no spaces, comma-separated list with column names to remove [default= %default; e.g. \"Image_Metadata_C,Image_Metadata_Z\"]", metavar="character"),
   make_option(c("-z", "--gzip"), action="store_true", default="FALSE", 
-              help="gzip the resulting csv [default= %default]")
+              help="gzip the resulting csv [default= %default]"),
+  make_option(c("-n", "--nsignif"), type="integer", default=6, 
+              help="number of significant digits in numeric columns [default= %default]", metavar="number")
 ); 
 
 opt_parser = OptionParser(option_list=option_list);
