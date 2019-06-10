@@ -14,13 +14,12 @@
 % Parameters used from the config file:
 % file_cpout_1line
 % dir_lapout
-% file_cpout_1line
-% dir_lapout
 % column_well
 % column_fov
 % column_frame
 % column_posx
 % column_posy
+% column_posz
 % 
 % Additionally, several optional parameters for LAP tracking can be defined
 % in the coniguration fie (lapconfig.csv):

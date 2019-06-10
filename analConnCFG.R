@@ -22,7 +22,7 @@ params$s.f.cfg = args[1]
 params$s.dir.data = args[2]
 
 if(sum(is.na(args[1:2])) > 0) {
-  stop('Wrong number of parameters! Call: Rscript cleanCPoutCFG.R path_to_config_file path_to_cp_out')
+  stop('Wrong number of parameters! Call: Rscript analConnCFG path_to_config_file path_to_cp_out')
 }
 
 
@@ -96,7 +96,7 @@ params$s.f.core = gsub('.csv', '', params$s.f.cpout)
 if(params$cfg.dirtracks %in% names(l.cfg)) {
   params$s.dir.tracks = l.cfg[[params$cfg.dirtracks]]
 } else {
-  stop(sprintf('Config file does not contain %s parameter; please provide, no default!', params$cfg.cpout1line))
+  stop(sprintf('Config file does not contain %s parameter; please provide, no default!', params$cfg.dirtracks))
 }
 
 # These parameters can be omitted in the config file; default values defined
