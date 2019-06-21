@@ -208,16 +208,21 @@ if (bWellExists)
   end
 end
 
-% get range of FOV
-all.fovs = unique(dat.(par.col_fov));
 
 %%
 for iiWells = 1:szAllWells
+
+	curr.well = all.wells(iiWells, :);
+	
+	% get range of FOV for this well
+	% wells can have different number of FOVs
+	dattmp = dat(categorical(dat.(par.col_well)) == curr.well, :);
+	all.fovs = unique(dattmp.(par.col_fov));
+
     for iiFovs = 1:length(all.fovs)
 
         % create filenames for outputs
         % file with tracks
-        curr.well = all.wells(iiWells, :);
         curr.fov = all.fovs(iiFovs);
         
         fname.tr = sprintf('%s/%s_Well%s_S%02d_tracks.csv', fname.pathlap, fname.cpcsvcore, curr.well, curr.fov);
