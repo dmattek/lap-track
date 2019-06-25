@@ -216,8 +216,12 @@ for iiWells = 1:szAllWells
 	
 	% get range of FOV for this well
 	% wells can have different number of FOVs
-	dattmp = dat(categorical(dat.(par.col_well)) == curr.well, :);
-	all.fovs = unique(dattmp.(par.col_fov));
+	if (bWellExists)
+		dattmp = dat(categorical(dat.(par.col_well)) == curr.well, :);
+		all.fovs = unique(dattmp.(par.col_fov));
+	else
+		all.fovs = unique(dat.(par.col_fov));
+	end
 
     for iiFovs = 1:length(all.fovs)
 
