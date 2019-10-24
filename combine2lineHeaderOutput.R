@@ -6,9 +6,9 @@
 # Rscript combine2lineHeaderOutput.R ~/myexp1/cp.out/output objNuc.csv .mer
 # Last parameter is optional, defaults to ".mer"
 
-require(data.table)
-require(optparse)
-require(R.utils)
+require(data.table, quietly = T)
+require(optparse, quietly = T)
+require(R.utils, quietly = T)
 
 #' Read a CSV file with a 2-line header
 #'
@@ -25,17 +25,58 @@ require(R.utils)
 #' @import data.table
 
 LOCfreadCSV2lineHeader = function(in.file, in.col.rem = NULL) {
+  require(data.table)
 
-
+  # check if the file is properly formatted and if it contains data
+  # empty files (only with 2-line header) are gnererated by CP when no object identfied
+  
+  
   # Read the first two rows
-  loc.dt.head = data.table::fread(in.file, nrows = 2, header = FALSE)
-
+  outFread = tryCatch(
+    {
+      loc.dt.head = data.table::fread(in.file, nrows = 2, header = FALSE)
+    },
+    
+    error = function(cond) {
+      message(sprintf("data.table::fread error. File %s is empty; return NULL", in.file))
+      return(NULL)
+    },
+    
+    warning = function(cond) {
+      message(sprintf("data.table::fread warning File %s is empty; return NULL", in.file))
+      return(NULL)
+    },
+    
+    finally = function(cond) {
+      return(loc.dt.nuc)
+    }
+  )
+  
+  if(is.null(outFread))
+    return(NULL)
+  
   # make a joint single-row header from two rows
   loc.s.head = paste0(loc.dt.head[1,], '_', loc.dt.head[2,])
 
   # read the rest of the output (except first two rows)
-  loc.dt.nuc = data.table::fread(in.file, skip = 2)
+  outFread = tryCatch(
+    {
+      loc.dt.nuc = data.table::fread(in.file, skip = 2)
+    },
 
+    error = function(cond) {
+      message(sprintf("data.table::fread error. File %s contains header but no content; return NULL", in.file))
+      return(NULL)
+    },
+    
+    finally = function(cond) {
+      return(loc.dt.nuc)
+    }
+  )
+
+  if(is.null(outFread))
+    return(NULL)
+  
   # set column names
   data.table::setnames(loc.dt.nuc, loc.s.head)
 
@@ -135,8 +176,13 @@ s.files = list.files(path = file.path(params$s.dir.data),
                      pattern = paste0(params$s.file.data, "$"),
                      recursive = TRUE, 
                      full.names = TRUE)
+
+if (length(s.files) == 0) {
+  stop("No files to merge. Check the file name given after the -f parameter.")
+}
+
 cat("Merging files:\n")
-cat(s.files)
+print(s.files)
 cat("\n")
 
 dt.all = do.call(rbind, lapply(s.files, function(x) LOCfreadCSV2lineHeader(x, in.col.rem = params$s.col.rem)))
@@ -148,5 +194,5 @@ fwrite(LOCsignif_dt(dt.all, opt$nsignif),
 
 if (opt$gzip) {
   cat("\nMerged file will be gzipped\n")
-  gzip(file.path(params$s.dir.out, params$s.file.data))
+  gzip(file.path(params$s.dir.out, params$s.file.data), overwrite = T)
 }
