@@ -14,9 +14,10 @@ where:
 	-h | --help		Show this Help text.
 	-i | --indir		Path to data directory. This argument is mandatory.
 	-c | --cfgfile		Config file for LAP tracking, e.g. lapconfig.csv. This argument is mandatory.
-	-J | --Jobname		Name of the SLURM job (default laptrack).
-	-T | --time		Walltime for the task execution in format day-h:min (default 5 hours).
-	-p | --partition        Name of the slurm queue partition; default all."
+	-j | --jobname		Name of the SLURM job (default laptrack).
+	-t | --time		Walltime for the task execution in format day-h:m:s (default 1 hour).
+	-p | --partition        Name of the slurm queue partition; default all.
+	-m | --mem		Memory per CPU in MBs (default 4096)."
 
 
 # -------------- Bash part for taking inputs -----------
@@ -30,14 +31,15 @@ CFGFFLAG=false
 SLOUTDIR=slurm.jobs
 
 # Default parameters for slurm array and LAP
-JOBNAME="laptrack"
+JOBNAME=laptrack
 TIME="01:00:00" # 1 hour
+MEM=4096
 
 # Name of the slurm partition to submit the job
 SLPART=all
 
 # Read arguments
-TEMP=`getopt -o hi:c:J:T: --long help,indir:,cfgfile:Jobname:,Time: -n 'runLAPcfg_array.sh' -- "$@"`
+TEMP=`getopt -o hi:c:j:t:p:m: --long help,indir:,cfgfile:,jobname:,time:,partition:,mem: -n 'runLAPcfg_array.sh' -- "$@"`
 eval set -- "$TEMP"
 
 while true ; do
@@ -55,12 +57,12 @@ while true ; do
                 "") shift 2 ;;
                 *) CFGF=$2 ; shift 2 ;;
             esac ;;
-	-J|--jobname)
+	-j|--jobname)
             case "$2" in
                 "") shift 2 ;;
                 *) JOBNAME=$2 ; shift 2 ;;
             esac ;;
-	-T|--time)
+	-t|--time)
             case "$2" in
                 "") shift 2 ;;
                 *) TIME=$2 ; shift 2 ;;
@@ -69,6 +71,11 @@ while true ; do
             case "$2" in
                 "") shift 2 ;;
                 *) SLPART=$2 ; shift 2 ;;
+            esac ;;
+	-m|--mem)
+            case "$2" in
+                "") shift 2 ;;
+                *) MEM=$2 ; shift 2 ;;
             esac ;;
 	--) shift ; break ;;
      *) echo "Internal error!" ; exit 1 ;;
@@ -109,7 +116,7 @@ FARRAY=$INDIR/$SLOUTDIR/$JOBNAME.sbatch
 echo "#!/bin/bash" > $FARRAY
 echo "#SBATCH --array=1-$NFOLD" >> $FARRAY 
 echo "#SBATCH -J $JOBNAME # Single job name for the array" >> $FARRAY
-echo "#SBATCH --mem-per-cpu=4096" >> $FARRAY
+echo "#SBATCH --mem-per-cpu=$MEM # Memory per CPU" >> $FARRAY
 echo "#SBATCH -t $TIME # walltime" >> $FARRAY
 echo "#SBATCH -o $INDIR/$SLOUTDIR/out/${JOBNAME}_array%A%a.out" >> $FARRAY
 echo "#SBATCH -e $INDIR/$SLOUTDIR/err/${JOBNAME}_array%A%a.err" >> $FARRAY
