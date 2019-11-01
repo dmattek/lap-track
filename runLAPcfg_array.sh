@@ -15,7 +15,8 @@ where:
 	-i | --indir		Path to data directory. This argument is mandatory.
 	-c | --cfgfile		Config file for LAP tracking, e.g. lapconfig.csv. This argument is mandatory.
 	-J | --Jobname		Name of the SLURM job (default laptrack).
-	-T | --time		Walltime for the task execution in format day-h:min (default 5 hours)."
+	-T | --time		Walltime for the task execution in format day-h:min (default 5 hours).
+	-p | --partition        Name of the slurm queue partition; default all."
 
 
 # -------------- Bash part for taking inputs -----------
@@ -31,6 +32,9 @@ SLOUTDIR=slurm.jobs
 # Default parameters for slurm array and LAP
 JOBNAME="laptrack"
 TIME="01:00:00" # 1 hour
+
+# Name of the slurm partition to submit the job
+SLPART=all
 
 # Read arguments
 TEMP=`getopt -o hi:c:J:T: --long help,indir:,cfgfile:Jobname:,Time: -n 'runLAPcfg_array.sh' -- "$@"`
@@ -60,6 +64,11 @@ while true ; do
             case "$2" in
                 "") shift 2 ;;
                 *) TIME=$2 ; shift 2 ;;
+            esac ;;
+	-p|--partition)
+            case "$2" in
+                "") shift 2 ;;
+                *) SLPART=$2 ; shift 2 ;;
             esac ;;
 	--) shift ; break ;;
      *) echo "Internal error!" ; exit 1 ;;
@@ -104,6 +113,7 @@ echo "#SBATCH --mem-per-cpu=4096" >> $FARRAY
 echo "#SBATCH -t $TIME # walltime" >> $FARRAY
 echo "#SBATCH -o $INDIR/$SLOUTDIR/out/${JOBNAME}_array%A%a.out" >> $FARRAY
 echo "#SBATCH -e $INDIR/$SLOUTDIR/err/${JOBNAME}_array%A%a.err" >> $FARRAY
+echo "#SBATCH --partition=$SLPART" >> $FARRAY
 
 # Select only the n-th subfolder, where n is the task ID
 echo "SUBFOLD=\`ls '$INDIR' | grep -v '^slurm\|@eaDir' | head -\$SLURM_ARRAY_TASK_ID | tail -1\`" >> $FARRAY
