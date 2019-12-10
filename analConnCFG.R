@@ -3,11 +3,10 @@
 # that contains indices of objects from every frame that form a tracks
 
 require(data.table)
-require(tca)
 
 DEB = 1
 
-## Parse command-line params
+## Parse command-line params ----
 args <- commandArgs(TRUE)
 
 # List for storing params and defs
@@ -26,7 +25,68 @@ if(sum(is.na(args[1:2])) > 0) {
 }
 
 
-## Parse config file
+## Custom functions ----
+#' Check whether a string consists only from digits
+#'
+#' @param x Input string
+#'
+#' @return True if the input string consists only from digits, False otherwise.
+#' @export
+#'
+#' @examples
+#' checkDigits('1111')
+#' checkDigits('1111cccc')
+LOCcheckDigits <- function(x) {
+  grepl('^[-]?[0-9]+[.]?[0-9]*$' , x)
+}
+
+#' Check whether a string matches TRUE/FALSE, T/F, or T.../F...
+#'
+#' @param x Input string
+#'
+#' @return True if the input string matches the pattern, False otherwise.
+#' @export
+#'
+#' @examples
+#' checkLogical('TRUE')
+#' checkLogical('xxxTxxx')
+LOCcheckLogical <- function(x) {
+  grepl('^TRUE$|^FALSE$|^T$|^F$' , x)
+}
+
+#' Converts string elements of a named list to apporpriate types
+#'
+#' Strings that consist of digits are converted to type \code{numeric}, strings with TRUE/FALSE, T/F, or T.../F... to \code{logical}.
+#'
+#' @param in.l Named list fo strings.
+#'
+#' @return Named list with elements converted to appropriate types.
+#' @export
+#'
+#' @examples
+#'  l.tst = list()
+#'  l.tst$aaa = '1000'
+#'  l.tst$bbb = '1000xx'
+#'  l.tst$ccc = 'True'
+#'  l.tst$ddd = 'xxxTrue'
+#'  l.res = convertStringListToTypes(l.tst)
+#'  str(l.res)
+
+LOCconvertStringList2Types <- function(in.l) {
+  # convert strings with digits to numeric
+  # uses logical indexing: http://stackoverflow.com/questions/42207235/replace-list-elements-by-name-with-another-list
+  loc.l = LOCcheckDigits(in.l)
+  in.l[loc.l] = lapply(in.l[loc.l], as.numeric)
+  
+  # convert strings with TRUE/FALSE to logical
+  loc.l = LOCcheckLogical(in.l)
+  in.l[loc.l] = lapply(in.l[loc.l], as.logical)
+  
+  return(in.l)
+}
+
+
+## Parse config file ----
 # Name of the parameter in config file that prescribes minimum track length
 params$cfg.cpout1line = 'file_cpout_1line'
 params$cfg.dirtracks = 'dir_lapout'
@@ -71,7 +131,7 @@ params$b.data.out = TRUE
 
 
 
-## Read config file
+## Read config file ----
 # read the csv file; 2 columns only
 dt.cfg = fread(params$s.f.cfg, select = 1:2)
 
@@ -79,7 +139,7 @@ dt.cfg = fread(params$s.f.cfg, select = 1:2)
 l.cfg = split(dt.cfg[[2]], dt.cfg[[1]])
 
 # convert strings to appropriate types
-l.cfg = tca::convertStringList2Types(l.cfg)
+l.cfg = LOCconvertStringList2Types(l.cfg)
 
 # These parameters have to be provided in the config file; no defaults
 # 1-line header CP out file, e.g. objNuclei_1line.csv
@@ -172,7 +232,7 @@ cat("Minimum track len: ", params$tracklen, "\n")
 params$s.f.data.con = list.files(file.path(params$s.dir.data, params$s.dir.tracks), paste0(params$s.lap.conn, ".csv"))
 params$s.f.data.seq = list.files(file.path(params$s.dir.data, params$s.dir.tracks), paste0(params$s.lap.seq, ".csv"))
 
-# load data
+## Load data ----
 if(DEB) {
 	cat(sprintf('Reading CP output from: %s\n', file.path(params$s.dir.data, params$s.f.cpout)))
 	cat(sprintf('Reading LAP out - conn: %s\n', file.path(params$s.dir.data, params$s.dir.tracks, params$s.f.data.con)))
@@ -247,7 +307,7 @@ if (b.well)
 setkeyv(dt.concp.sub, c(params$s.fov, params$s.track))
 
 
-
+## Save ----
 # save a reduced dataset with:
 # Image_Metadata_Well Image_Metadata_Site Image_Metadata_T
 # track_id - track ID from u-track (it's unique per analysis; if analysis with u-track was performed on the entire dataset, track_id is unique)
