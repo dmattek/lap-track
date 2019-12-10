@@ -127,7 +127,7 @@ echo -e "\n1. Convert and clean CP output"
 echo "Config file: $CFGF"
 echo "Input file:  $INDIRFULL"
 
-runrscript.sh $DIRRSCR/cleanCPoutCFG.R $CFGFFULL $INDIRFULL
+runrscript.sh $DIRMSCR/cleanCPoutCFG.R $CFGFFULL $INDIRFULL
 
 
 
@@ -155,6 +155,10 @@ python3 $DIRPSCR/script_overlay_cfg.py -c $CFGFFULL -d $INDIRFULL
 # - sub-directory with LAP output
 # - integer threshold for track lengths; only track longer than that will be saved
 echo -e "\n4. Generate final CSV with tracks"
-runrscript.sh $DIRRSCR/analConnCFG.R $CFGFFULL $INDIRFULL
+runrscript.sh $DIRMSCR/analConnCFG.R $CFGFFULL $INDIRFULL
 
 
+# Remove intermediate file: CP output with 1-line header
+FREM=$(grep file_cpout_1line $CFGFFULL | awk -F "," '{print $2}')
+cd $INDIRFULL
+rm $FREM

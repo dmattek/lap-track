@@ -28,7 +28,7 @@ INDIRFLAG=false
 # Config file
 CFGFFLAG=false
 
-SLOUTDIR=slurm.jobs
+SLOUTDIR=slurm.lap
 
 # Default parameters for slurm array and LAP
 JOBNAME=laptrack
