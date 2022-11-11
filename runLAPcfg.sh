@@ -62,11 +62,6 @@ INDIRFLAG=false
 # Config file
 CFGFFLAG=false
 
-# Path to directory with cleanCPoutCFG.R script
-# The script converts CP output from 2- to 1-line header, and remove unnecessary or duplicated columns
-# The script is part of https://github.com/dmattek/Paolo-MCF10A-timelapse.git
-DIRRSCR="/opt/local/misc-improc/Paolo-MCF10A-timelapse"
-
 # Path to directory with trackFromCPsepfilesCFG.m script to perform LAP tracking
 DIRMSCR="/opt/local/misc-improc/lap-track"
 
@@ -138,7 +133,7 @@ runrscript.sh $DIRMSCR/cleanCPoutCFG.R $CFGFFULL $INDIRFULL
 echo -e "\n2. Run LAP tracking in Matlab"
 CMDMAT='cd '"'"$DIRMSCR"'"'; path(pathdef); trackFromCPsepfilesCFG('"'"$CFGFFULL"'"', '"'"$INDIRFULL"'"'); quit'
 echo $CMDMAT
-matlab -nodisplay -nosplash -nodesktop -r "$CMDMAT"
+matlab2016 -nodisplay -nosplash -nodesktop -r "$CMDMAT"
 
 
 # Overlay track IDs onto segmented images

@@ -149,7 +149,7 @@ runrscript.sh $DIRRSCR/cleanCPout.R $INDIRFULL/$FCPRAWALL $INDIR/$FCP1LHALL
 echo "2. Run LAP tracking"
 CMDMAT='cd '"'"$DIRMSCR"'"'; trackFromCPsepfiles('"'"$INDIRFULL"'"', '"'"$FCP1LHALL"'"', '"'"$DIRLAPOUT"'"', '"'"$DIRUSCR"'"'); quit'
 echo $CMDMAT
-matlab -nodisplay -nosplash -nodesktop -r "$CMDMAT"
+matlab2016 -nodisplay -nosplash -nodesktop -r "$CMDMAT"
 
 # Overlay track IDs onto segmented images
 # The resulting images are placed in a directory ...
