@@ -140,7 +140,7 @@ INDIRFULL=`readlink -f $INDIR`
 # Run R script to convert CP output from 2- to 1-line header, and remove unnecessary or duplicated columns
 # Takes the input file and writes the result in $FCP1LHALL
 echo "1. Convert and clean CP output"
-runrscript.sh $DIRRSCR/cleanCPout.R $INDIRFULL/$FCPRAWALL $INDIR/$FCP1LHALL
+Rscript $DIRRSCR/cleanCPout.R $INDIRFULL/$FCPRAWALL $INDIR/$FCP1LHALL
 
 # Run MATLAB script with LAP tracking
 # Changes to $INDIR directory, places output in $DIRLAPOUTALL sub-directory
@@ -165,5 +165,5 @@ python3 $DIRPSCR/script_overlay.py $INDIRFULL $DIRLAPOUTALL $DIRIMSEG $DIRIMOVER
 # - sub-directory with LAP output
 # - integer threshold for track lengths; only track longer than that will be saved
 echo "4. Generate final CSV with tracks longer than $NTRACKLENGTH"
-runrscript.sh $DIRRSCR/analConn.R $INDIRFULL $FCPRAW$FCPOUT1LH $DIRLAPOUT$FCPRAW$FCPOUT1LH $NTRACKLENGTH
+Rscript $DIRRSCR/analConn.R $INDIRFULL $FCPRAW$FCPOUT1LH $DIRLAPOUT$FCPRAW$FCPOUT1LH $NTRACKLENGTH
 

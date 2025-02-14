@@ -4,4 +4,4 @@
 
 DIR=/opt/local/misc-improc/lap-track
 
-runrscript.sh $DIR/combine1lineHeaderOutput.R $@
+Rscript $DIR/combine1lineHeaderOutput.R $@
